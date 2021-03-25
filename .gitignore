@@ -4,5 +4,5 @@ Cargo.lock
 bin/
 pkg/
 wasm-pack.log
-ww/node_modules/
-ww/dist/
+www/node_modules/
+www/dist/
