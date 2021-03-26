@@ -2,6 +2,14 @@ mod utils;
 use std::fmt;
 use wasm_bindgen::prelude::*;
 
+extern crate web_sys;
+// A macro to provide `println(..)` -Style syntax for `console.log` logging.ALLOC
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    };
+}
+
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
@@ -14,6 +22,15 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub enum Cell {
     Dead = 0,
     Alive = 1,
+}
+
+impl Cell {
+    fn toggle(&mut self) {
+        *self = match *self {
+            Cell::Dead => Cell::Alive,
+            Cell::Alive => Cell::Dead,
+        };
+    }
 }
 
 #[wasm_bindgen]
@@ -36,7 +53,14 @@ impl Universe {
     pub fn cells(&self) -> *const Cell {
         self.cells.as_ptr()
     }
+
+    pub fn toggle_cell(&mut self, row: u32, col: u32) {
+        let idx = self.get_index(row, col);
+        self.cells[idx].toggle();
+    }
+
     pub fn new() -> Universe {
+        utils::set_panic_hook();
         let width = 64;
         let height = 64;
 
@@ -90,6 +114,14 @@ impl Universe {
                 let cell = self.cells[idx];
                 let live_neighbors = self.live_neighbor_count(row, col);
 
+                // log!(
+                //     "cel [{},{}] is initially {:?} and has {} live neighbors",
+                //     row,
+                //     col,
+                //     cell,
+                //     live_neighbors
+                // );
+
                 let next_cell = match (cell, live_neighbors) {
                     // Rule 1: Any live cell with fewer than two live neighbours
                     // dies, as if caused by underpopulation.
@@ -107,6 +139,7 @@ impl Universe {
                     (otherwise, _) => otherwise,
                 };
 
+                //log!("  it becomes {:?}", next_cell);
                 next[idx] = next_cell;
             }
         }
